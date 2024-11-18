@@ -67,17 +67,17 @@ class Polynome {
 			for (std::size_t i = 0; i < max_iters; ++i) {
 				auto pz = apply(z);
 				auto dpz = d.apply(z);
-				if (dpz.is_zero() || !dpz.is_normal() || !pz.is_normal() || (pz/dpz).is_zero())
+				if (dpz.is_zero() || !dpz.is_normal() || !pz.is_normal() || (pz / dpz).is_zero())
 					break;
 				z = z - (pz / dpz);
 			}
 			if (dist_squared(apply(z), comp<Real>{ 0. }) > 1e-32) {
 				switch (k++) {
 				case 0:
-					z = comp<Real>{ Real{z.re}, 0. };
+					z = comp<Real>{ Real{ z.re }, 0. };
 					break;
 				case 1:
-					z = comp<Real>{ 0., Real{z.im} };
+					z = comp<Real>{ 0., Real{ z.im } };
 					break;
 				case 2:
 					z = z * comp<Real>{ 0.5, 0. };
@@ -101,7 +101,7 @@ class Polynome {
 		if (effective_degree() > 1) {
 			auto subp = *this / Polynome<Real, 2>{ { z, 1 } };
 			auto subr = subp.roots(max_iters, z0);
-			for (std::size_t i = 0; i < ret.size()-1; ++i) {
+			for (std::size_t i = 0; i < ret.size() - 1; ++i) {
 				ret[i + 1] = subr[i];
 			}
 		}
@@ -168,10 +168,21 @@ constexpr Polynome<Real, L> operator/(Polynome<Real, L> const& lhs, Polynome<Rea
 
 template <typename Real>
 constexpr Polynome<Real, 2> polynomFromRoots(comp<Real> const& r) {
-	std::array<comp<Real>, 2> arr{-r, comp<Real>{1., 0.}};
-	return Polynome<Real, 2>{std::move(arr)};
+	std::array<comp<Real>, 2> arr{ -r, comp<Real>{ 1., 0. } };
+	return Polynome<Real, 2>{ std::move(arr) };
 }
 template <typename Real, typename... Args>
-constexpr Polynome<Real, 1+1+sizeof...(Args)> polynomFromRoots(comp<Real> const& r, Args&&... roots) {
+constexpr Polynome<Real, 1 + 1 + sizeof...(Args)> polynomFromRoots(comp<Real> const& r, Args&&... roots) {
 	return polynomFromRoots(r) * polynomFromRoots(std::forward<Args>(roots)...);
+}
+template <typename Real, std::size_t N>
+constexpr Polynome<Real, static_cast<int>(1 + N)> polynomFromRoots(std::array<comp<Real>, N> const& roots) {
+	if constexpr (N == 1) {
+		return polynomFromRoots(roots[0]);
+	} else {
+		std::array<comp<Real>, N - 1> suba;
+		for (std::size_t i = 1; i < N; ++i)
+			suba[i - 1] = roots[i];
+		return polynomFromRoots(roots[0]) * polynomFromRoots(suba);
+	}
 }

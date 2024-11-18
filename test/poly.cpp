@@ -227,3 +227,13 @@ TEST(Polynome, constexpr_polyfromroot) {
 		EXPECT_LT(dist_squared(pz, comp<float>{ 0. }), epsilon);
 	}
 }
+
+TEST(Polynome, constexpr_polyfromroot_array) {
+	static constexpr auto arr = std::array<comp<float>, 3>{comp<float>{ 1. }, comp<float>{ 2. }, comp<float>{ 3. }};
+	static constexpr auto p = polynomFromRoots(arr);
+	static constexpr std::array<comp<float>, 3> expected{ comp<float>(1.0), comp<float>(2.0), comp<float>(3.0) };
+	for (std::size_t i = 0; i < expected.size(); ++i) {
+		auto pz = p.apply(expected[i]);
+		EXPECT_LT(dist_squared(pz, comp<float>{ 0. }), epsilon);
+	}
+}

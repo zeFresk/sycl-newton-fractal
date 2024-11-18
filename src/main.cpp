@@ -19,14 +19,14 @@ constexpr auto compute_top_left(auto center, auto inc, auto w, auto h) {
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 	static constexpr std::array<comp<float>, 3> roots{ comp<float>{ 1. }, comp<float>{ -0.5, -0.866025403784439 },
 							   comp<float>(-0.500000000000000, 0.866025403784439) };
-	static constexpr auto poly = polynomFromRoots(comp<float>{ 1. }, comp<float>{ -1 }, comp<float>{ 0. });
+	static constexpr auto poly = polynomFromRoots(roots);
 	static constexpr auto deri = poly.derivative();
-	static constexpr auto center = comp_t<float>(-0.4, 0.);
-	static constexpr auto inc = 0.0005f;
-	static constexpr std::size_t width = 720;
-	static constexpr std::size_t height = 720;
+	static constexpr auto center = comp_t<float>(0., 0.);
+	static constexpr auto inc = 0.01f;
+	static constexpr std::size_t width = 1080;
+	static constexpr std::size_t height = 1080;
 	static constexpr auto top_left = compute_top_left(center, inc, width, height);
-	static constexpr int cycles = 25;
+	static constexpr int cycles = 1000;
 
 	std::cout << "Initialized with:\n";
 	std::cout << "Poly: ";
