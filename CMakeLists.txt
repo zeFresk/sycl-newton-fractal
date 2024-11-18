@@ -39,6 +39,8 @@ if(WIN32)
   add_definitions(-D_USE_MATH_DEFINES)
 endif()
 
+find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
+
 file(GLOB SOURCES "src/*.cpp")
 list(FILTER SOURCES EXCLUDE REGEX "[^/]+/main.cpp")
 add_executable(newton src/main.cpp)
@@ -47,6 +49,7 @@ target_include_directories(newton_lib PUBLIC include)
 #add_sycl_to_target(TARGET newton_lib SOURCES ${SOURCES})
 add_sycl_to_target(TARGET newton SOURCES src/main.cpp)
 target_link_libraries(newton PUBLIC newton_lib)
+target_link_libraries(newton PRIVATE sfml-graphics sfml-window sfml-system)
 target_compile_options(newton_lib PUBLIC 
 	$<$<CXX_COMPILER_ID:Clang,GNU>:-Wall -Wextra -Wpedantic>
 	$<$<CONFIG:Debug>:-g>

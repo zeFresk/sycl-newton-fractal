@@ -3,6 +3,8 @@
 
 #include <CL/sycl.hpp>
 
+#include <SFML/Graphics.hpp>
+
 #include "comp.hpp"
 #include "poly.hpp"
 
@@ -15,13 +17,14 @@ constexpr auto compute_top_left(auto center, auto inc, auto w, auto h) {
 }
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
-	static constexpr std::array<comp<float>, 3> roots{ comp<float>{ 1. }, comp<float>{ -1. }, 0. };
+	static constexpr std::array<comp<float>, 3> roots{ comp<float>{ 1. }, comp<float>{ -0.5, -0.866025403784439 },
+							   comp<float>(-0.500000000000000, 0.866025403784439) };
 	static constexpr auto poly = polynomFromRoots(comp<float>{ 1. }, comp<float>{ -1 }, comp<float>{ 0. });
 	static constexpr auto deri = poly.derivative();
-	static constexpr auto center = comp_t<float>(0, 0);
-	static constexpr auto inc = 0.01f;
-	static constexpr std::size_t width = 1920;
-	static constexpr std::size_t height = 1080;
+	static constexpr auto center = comp_t<float>(-0.4, 0.);
+	static constexpr auto inc = 0.0005f;
+	static constexpr std::size_t width = 720;
+	static constexpr std::size_t height = 720;
 	static constexpr auto top_left = compute_top_left(center, inc, width, height);
 	static constexpr int cycles = 25;
 
@@ -143,8 +146,85 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 	std::cout << "Finished in: " << elapsed_sec << "\n"
 		  << "FLOPS: " << flops << std::endl;
 
-	auto ha = closestRoot.get_host_access();
+	auto ha = closestRoot.get_host_access(sycl::read_only);
 	std::vector<int> out(ha.begin(), ha.end());
 
+	if ((width * height) < 128) {
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; ++j)
+				std::cout << ha[sycl::id<2>(i, j)] << " ";
+			std::cout << "\n";
+		}
+	}
+
+	std::map<int, int> counts;
+	for (auto r : out) {
+		auto it = counts.find(r);
+		counts[r] = (it == counts.end()) ? 1 : it->second + 1;
+	}
+
+	std::cout << "Found:\n";
+	for (auto const& [k, v] : counts)
+		std::cout << "[" << k << "]: " << v << "\n";
+
+	std::array<unsigned char, width * height * 4> pix;
+	for (std::size_t i = 0; i < out.size(); ++i) {
+		auto idx = i * 4;
+		pix[idx + 0] = (out[i] == 0) ? 255 : 0;
+		pix[idx + 1] = (out[i] == 1) ? 255 : 0;
+		pix[idx + 2] = (out[i] == 2) ? 255 : 0;
+		pix[idx + 3] = 255;
+	}
+
+	sf::RenderWindow window(sf::VideoMode(width, height), "Newton fractal viewer");
+	sf::Texture texture;
+	texture.create(width, height);
+	sf::Sprite sprite(texture);
+	texture.update(pix.data());
+
+	while (window.isOpen()) {
+		sf::Event event;
+		while (window.pollEvent(event)) {
+			if (event.type == sf::Event::Closed) {
+				window.close();
+			} else if (event.type == sf::Event::KeyPressed) {
+				if (event.key.code == sf::Keyboard::Escape) {
+					window.close();
+				} /* else if (event.key.code == sf::Keyboard::Left) {
+					center_.re -= 10.0f * inc; // Adjust panning speed based on zoom
+				} else if (event.key.code == sf::Keyboard::Right) {
+					center_.re += 10.0f * inc;
+				} else if (event.key.code == sf::Keyboard::Up) {
+					center_.im -= 10.0f * inc;
+				} else if (event.key.code == sf::Keyboard::Down) {
+					centerY += 10.0f / zoom;
+				} else if (event.key.code == sf::Keyboard::Add ||
+					   event.key.code == sf::Keyboard::Equal) {
+					zoom += 0.1f;
+				} else if (event.key.code == sf::Keyboard::Subtract ||
+					   event.key.code == sf::Keyboard::Dash) {
+					zoom -= 0.1f;
+					zoom = std::max(0.1f, zoom); // Prevent zoom from going below 0.1
+				}
+			} else if (event.type == sf::Event::MouseButtonPressed) {
+				if (event.mouseButton.button == sf::Mouse::Left) {
+					// Handle mouse drag start (optional)
+				}
+			} else if (event.type == sf::Event::MouseButtonReleased) {
+				if (event.mouseButton.button == sf::Mouse::Left) {
+					// Handle mouse drag end (optional)
+				}
+			} else if (event.type == sf::Event::MouseMoved) {
+				if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+					// Update centerX and centerY based on mouse movement
+					centerX = event.mouseMove.x;
+					centerY = event.mouseMove.y;
+				}*/
+			}
+		}
+		window.clear();
+		window.draw(sprite);
+		window.display();
+	}
 	return 0;
 }
