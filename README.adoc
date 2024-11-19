@@ -1,8 +1,8 @@
-:title: Newton's fractals using SYCL
+:title: Fast, live and interactive Newton fractals using SYCL in modern C++
 :author: zeFresk
 :version-label: 1.0.0
 
-= Newton fractals
+= Fast, live and interactive Newton fractals using SYCL in modern C++
 
 This repository provides a SYCL implementation of the Newton's fractal with an SFML interface for convenience.
 
