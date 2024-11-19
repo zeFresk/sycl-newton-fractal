@@ -1,9 +1,4 @@
 #include <iostream>
-#include <chrono>
-
-#include <CL/sycl.hpp>
-
-#include <SFML/Graphics.hpp>
 
 #include "comp.hpp"
 #include "poly.hpp"

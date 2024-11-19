@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <chrono>
-//#include <mdspan>
 
 #include <CL/sycl.hpp>
 
