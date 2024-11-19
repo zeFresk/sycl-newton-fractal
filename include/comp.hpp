@@ -4,6 +4,11 @@
 #include <limits>
 
 template <typename T>
+constexpr T mabs(T v) {
+	return (v < T{}) ? -v : v;
+}
+
+template <typename T>
 class comp {
     public:
 	T re, im;
@@ -70,11 +75,23 @@ class comp {
 
 	constexpr bool is_zero(T epsilon = T{}) const {
 		//return ((im <= 1e-9) && (im >= -(1e-9))) && ((re <= 1e-9) && (re >= -(1e-9)));
-		return !((re * re + im * im) > epsilon*epsilon);
+		return !((re * re + im * im) > epsilon * epsilon);
 	}
 
 	constexpr bool is_normal() const {
 		return re != std::numeric_limits<T>::infinity() && re != -std::numeric_limits<T>::infinity();
+	}
+
+	template <typename O>
+	friend O& operator<<(O& os, comp const& cpx) {
+		if (mabs(cpx.im) < 1e-9) {
+			os << cpx.re;
+		} else if (mabs(cpx.re) < 1e-9) {
+			os << cpx.im << "i";
+		} else {
+			os << "(" << cpx.re << "+" << cpx.im << "i)";
+		}
+		return os;
 	}
 };
 

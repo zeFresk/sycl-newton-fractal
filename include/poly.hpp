@@ -41,7 +41,7 @@ class Polynome {
 	constexpr Polynome<Real, N - 1> derivative() const {
 		std::array<comp_t<Real>, N - 1> arr;
 		for (std::size_t i = 0; i < N - 1; ++i) {
-			arr[i] = coeffs_[i + 1] * static_cast<float>(i + 2);
+			arr[i] = coeffs_[i + 1] * static_cast<Real>(i + 2);
 		}
 		return Polynome<Real, N - 1>{ std::move(arr) };
 	}
