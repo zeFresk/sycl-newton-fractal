@@ -196,7 +196,7 @@ class FractalComputer {
 			sycl::accessor drw{ disroot, cgh, sycl::write_only, sycl::no_init };
 			sycl::accessor azns{ zs, cgh, sycl::read_only };
 			cgh.parallel_for(sycl::range<3>{ height, width, roots.size() }, [=](sycl::id<3> id) {
-				drw[id] = dist_squared(azns[sycl::id<2>{ id.get(1), id.get(0) }], rootc[id.get(2)]);
+				drw[id] = dist_squared(azns[sycl::id<2>{ id.get(0), id.get(1) }], rootc[id.get(2)]);
 			});
 		});
 
@@ -206,8 +206,8 @@ class FractalComputer {
 			cgh.parallel_for(sycl::range<2>{ height, width }, [=](sycl::id<2> id) {
 				crw[id] = 0;
 				for (int i = 1; i < (int)rootc.size(); ++i) {
-					crw[id] = adr[sycl::id<3>(id[1], id[0], i)] <
-								  adr[sycl::id<3>(id[1], id[0], crw[id])] ?
+					crw[id] = adr[sycl::id<3>(id[0], id[1], i)] <
+								  adr[sycl::id<3>(id[0], id[1], crw[id])] ?
 							  i :
 							  crw[id];
 				}

@@ -18,7 +18,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 							    comp<real_t>(-0.500000000000000, 0.866025403784439) };
 	static constexpr auto center = comp_t<real_t>(-0.4, 0.);
 	static constexpr real_t inc = 0.001f;
-	static constexpr std::size_t width = 1080;
+	static constexpr std::size_t width = 1920;
 	static constexpr std::size_t height = 1080;
 	static constexpr int cycles = 25;
 
