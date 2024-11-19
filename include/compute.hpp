@@ -40,11 +40,11 @@ class FractalComputer {
 	std::vector<int> cache;
 
 	void resize() {
-		zs = cl::sycl::buffer<comp<T>, 2>{ cl::sycl::range<2>{ width, height } };
-		pzs = cl::sycl::buffer<comp<T>, 2>{ cl::sycl::range<2>{ width, height } };
-		dpzs = cl::sycl::buffer<comp<T>, 2>{ cl::sycl::range<2>{ width, height } };
-		disroot = cl::sycl::buffer<T, 3>{ cl::sycl::range<3>{ width, height, N } };
-		closestRoot = cl::sycl::buffer<int, 2>{ cl::sycl::range<2>{ width, height } };
+		zs = cl::sycl::buffer<comp<T>, 2>{ cl::sycl::range<2>{ height, width } };
+		pzs = cl::sycl::buffer<comp<T>, 2>{ cl::sycl::range<2>{ height, width } };
+		dpzs = cl::sycl::buffer<comp<T>, 2>{ cl::sycl::range<2>{ height, width } };
+		disroot = cl::sycl::buffer<T, 3>{ cl::sycl::range<3>{ height, width, N } };
+		closestRoot = cl::sycl::buffer<int, 2>{ cl::sycl::range<2>{ height, width } };
 		cache.resize(width * height, -1);
 	}
 
@@ -54,9 +54,9 @@ class FractalComputer {
 		: roots{ roots_ }, poly{ polynomFromRoots(roots) }, deri{ poly.derivative() }, center{ center_ },
 		  inc{ inc_ }, width{ width_ }, height{ height_ }, cycles{ static_cast<int>(cycles_) },
 		  needCompute{ true }, lastTimePerComputation{ -1 }, lastFLOPS{ -1 },
-		  zs{ cl::sycl::range<2>{ width, height } }, pzs{ cl::sycl::range<2>{ width, height } },
-		  dpzs{ cl::sycl::range<2>{ width, height } }, disroot{ cl::sycl::range<3>{ width, height, N } },
-		  closestRoot{ cl::sycl::range<2>{ width, height } }, cache(width * height, -1) {
+		  zs{ cl::sycl::range<2>{ height, width } }, pzs{ cl::sycl::range<2>{ height, width } },
+		  dpzs{ cl::sycl::range<2>{ height, width } }, disroot{ cl::sycl::range<3>{ height, width, N } },
+		  closestRoot{ cl::sycl::range<2>{ height, width } }, cache(width * height, -1) {
 		try {
 			std::cout << "GPU...";
 			device = cl::sycl::device(cl::sycl::gpu_selector_v);
@@ -113,14 +113,14 @@ class FractalComputer {
 
 	void updateWidth(std::size_t newW) {
 		width = newW;
-		needCompute = true;
 		resize();
+		needCompute = true;
 	}
 
 	void updateHeight(std::size_t newH) {
 		height = newH;
-		needCompute = true;
 		resize();
+		needCompute = true;
 	}
 
 	void updateCycles(std::size_t newC) {
@@ -134,11 +134,13 @@ class FractalComputer {
 	T const& getIncrement() const { return inc; }
 	std::size_t getWidth() const { return width; }
 	std::size_t getHeight() const { return height; }
+	float getFLOPS() const { return lastFLOPS; }
+	float getIterTime() const { return lastTimePerComputation; }
 	std::size_t getCycles() const { return static_cast<std::size_t>(cycles); }
 
 	void move(comp<T> const& vec) { updateCenter(center + vec); }
-	void moveUp(int fac) { move({ 0., inc * fac }); }
-	void moveDown(int fac) { move({ 0., -inc * fac }); }
+	void moveUp(int fac) { move({ 0., -inc * fac }); }
+	void moveDown(int fac) { move({ 0., inc * fac }); }
 	void moveLeft(int fac) { move({ -inc * fac, 0. }); }
 	void moveRight(int fac) { move({ inc * fac, 0. }); }
 
@@ -163,28 +165,28 @@ class FractalComputer {
 
 		queue.submit([&](sycl::handler& cgh) {
 			sycl::accessor writeZs{ zs, cgh, sycl::write_only, sycl::no_init };
-			cgh.parallel_for(sycl::range<2>{ width, height }, [=](sycl::id<2> id) {
-				writeZs[id] = top_left + comp_t<T>(id[0] * inc, id[1] * inc);
+			cgh.parallel_for(sycl::range<2>{ height, width }, [=](sycl::id<2> id) {
+				writeZs[id] = top_left + comp_t<T>(id[1] * inc, id[0] * inc);
 			});
 		});
 		for (int i = 0; i < cycles; ++i) {
 			queue.submit([&](sycl::handler& cgh) {
 				sycl::accessor apzs{ pzs, cgh, sycl::write_only, sycl::no_init };
 				sycl::accessor azns{ zs, cgh, sycl::read_only };
-				cgh.parallel_for(sycl::range<2>{ width, height },
+				cgh.parallel_for(sycl::range<2>{ height, width },
 						 [=](sycl::id<2> id) { apzs[id] = polyc.apply(azns[id]); });
 			});
 			queue.submit([&](sycl::handler& cgh) {
 				sycl::accessor adpzs{ dpzs, cgh, sycl::write_only, sycl::no_init };
 				sycl::accessor azns{ zs, cgh, sycl::read_only };
-				cgh.parallel_for(sycl::range<2>{ width, height },
+				cgh.parallel_for(sycl::range<2>{ height, width },
 						 [=](sycl::id<2> id) { adpzs[id] = deric.apply(azns[id]); });
 			});
 			queue.submit([&](sycl::handler& cgh) {
 				sycl::accessor apzs{ pzs, cgh, sycl::read_only };
 				sycl::accessor adpzs{ dpzs, cgh, sycl::read_only };
 				sycl::accessor azns{ zs, cgh, sycl::read_write };
-				cgh.parallel_for(sycl::range<2>{ width, height }, [=](sycl::id<2> id) {
+				cgh.parallel_for(sycl::range<2>{ height, width }, [=](sycl::id<2> id) {
 					azns[id] = adpzs[id].is_zero() ? azns[id] : azns[id] - (apzs[id] / adpzs[id]);
 				});
 			});
@@ -193,19 +195,19 @@ class FractalComputer {
 		queue.submit([&](sycl::handler& cgh) {
 			sycl::accessor drw{ disroot, cgh, sycl::write_only, sycl::no_init };
 			sycl::accessor azns{ zs, cgh, sycl::read_only };
-			cgh.parallel_for(sycl::range<3>{ width, height, roots.size() }, [=](sycl::id<3> id) {
-				drw[id] = dist_squared(azns[sycl::id<2>{ id.get(0), id.get(1) }], rootc[id.get(2)]);
+			cgh.parallel_for(sycl::range<3>{ height, width, roots.size() }, [=](sycl::id<3> id) {
+				drw[id] = dist_squared(azns[sycl::id<2>{ id.get(1), id.get(0) }], rootc[id.get(2)]);
 			});
 		});
 
 		queue.submit([&](sycl::handler& cgh) {
 			sycl::accessor crw{ closestRoot, cgh, sycl::write_only, sycl::no_init };
 			sycl::accessor adr{ disroot, cgh, sycl::read_only };
-			cgh.parallel_for(sycl::range<2>{ width, height }, [=](sycl::id<2> id) {
+			cgh.parallel_for(sycl::range<2>{ height, width }, [=](sycl::id<2> id) {
 				crw[id] = 0;
 				for (int i = 1; i < (int)rootc.size(); ++i) {
-					crw[id] = adr[sycl::id<3>(id[0], id[1], i)] <
-								  adr[sycl::id<3>(id[0], id[1], crw[id])] ?
+					crw[id] = adr[sycl::id<3>(id[1], id[0], i)] <
+								  adr[sycl::id<3>(id[1], id[0], crw[id])] ?
 							  i :
 							  crw[id];
 				}
@@ -231,6 +233,7 @@ class FractalComputer {
 
 		auto ha = closestRoot.get_host_access(sycl::read_only);
 		std::copy(ha.begin(), ha.end(), cache.begin());
+		needCompute = false;
 		return cache;
 	}
 };

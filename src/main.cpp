@@ -23,7 +23,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 	static constexpr int cycles = 25;
 
 	auto computer = std::make_shared<FractalComputer<real_t, 4>>( roots, center, inc, width, height, cycles );
-	auto interface = Interface{ computer };
+	auto interface = Interface{ computer, 10 };
 
 	std::cout << "Initialized with:\n";
 	std::cout << "Poly: ";
